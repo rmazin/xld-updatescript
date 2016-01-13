@@ -26,15 +26,36 @@ save_path = "/" + raw_input("Please input the new shared path for your XL Deploy
 #xld_install = raw_input("Please enter the location of your XL Deploy Server: ")
 
 #create folders to organize reposititory if they don't exist
-if not os.path.exists(save_path):
+if os.path.exists(save_path):
+    print 'Your shared repository at ' + save_path + ' already exists I am Updating your XL Deploy server!'
+    for dir in directories:
+        print dir
+        #ignore the repository and work folders they only need to be checked and moved on the first install
+        if os.path.islink(dir):
+            print "The " + dir + " directory already exists as a symlink!"
+        else:
+            new_folder = str(save_path) + "/" + str(dir)
+            old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
+            #remove the folders from the new install
+            shutil.rmtree(old_loc)
+            print "Removing ", old_loc
+
+            #symlink the shared folders to the new locations
+            os.system("ln -s " + new_folder + " " + old_loc)
+            #print "ln -s " + new_folder + " ", old_loc
+            print "Symlinking ", new_folder + " to " + old_loc
+
+else:
     #print save_path, "Creating shared repository path for: ", new_folder
     os.makedirs(save_path)
     print "Creating directory: ", save_path
 
     #compile location for new repository
     for dir in directories:
+
         new_folder = str(save_path) + "/" + str(dir)
         old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
+
         print old_loc
         print "New Folder: ", new_folder
         print "Directory: ", dir
@@ -48,38 +69,28 @@ if not os.path.exists(save_path):
         # Any error saying that the directory doesn't exist
         except OSError as e:
             print('Directory not copied. Error: %s' % e)
-        
+
         #remove the folders from the new install
         shutil.rmtree(old_loc)
         print "Removing ", old_loc
-        
+
         #symlink the shared folders
         os.system("ln -s " + new_folder + " " + old_loc)
         #print "ln -s " + new_folder + " ", old_loc
         print "Symlinking ", new_folder + " to " + old_loc
-        
-        properties_file = save_path + "/conf/deployit.conf"
-        repository_loc = "jcr.repository.path=file:/" + save_path + "/repository"
-        oldProp ='jcr.repository.path=repository'
-        
-        print 'Updating the repository location in your ' + properties_file + " file from " + oldProp + " to " + repository_loc + "!"
-        
-        s = open(properties_file).read()
-        s = s.replace(oldProp, repository_loc)
-        f = open(properties_file, 'w')
-        f.write(s)
-        f.close()
 
+#check the reference to the repository file and make sure it's correct
+properties_file = save_path + "/conf/deployit.conf"
+repository_loc = "jcr.repository.path=file:/" + save_path + "/repository"
+oldProp ='jcr.repository.path=repository'
+
+s = open(properties_file).read()
+if repository_loc in s:
+    print "The repository link is correct in " + properties_file + "!"
 else:
-    print 'Your shared repository at ' + save_path + ' already exists I am Updating your XL Deploy server!'
-    for dir in directories:
-        new_folder = str(save_path) + "/" + str(dir)
-        old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
-        #remove the folders from the new install
-        shutil.rmtree(old_loc)
-        print "Removing ", old_loc
+    print 'Updating the repository location in your ' + properties_file + " file from " + oldProp + " to " + repository_loc + "!"
+    s = s.replace(oldProp, repository_loc)
+    f = open(properties_file, 'w')
+    f.write(s)
+    f.close()
 
-        #symlink the shared folders
-        os.system("ln -s " + new_folder + " " + old_loc)
-        #print "ln -s " + new_folder + " ", old_loc
-        print "Symlinking ", new_folder + " to " + old_loc
