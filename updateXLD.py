@@ -29,10 +29,14 @@ xld_install = os.path.dirname(os.path.realpath(__file__))
 # location to save move repository, ext, plugins and conf directores
 
 save_path = "/" + raw_input("Please input the new shared path for your XL Deploy repository: ") #this can be changed to a hardcoded location
+new_folder = str(save_path) + "/" + str(dir)
+
+
 #create folders to organize reposititory if they don't exist
 if os.path.exists(save_path):
     print 'Your shared repository at ' + save_path + ' already exists I am updating your XL Deploy server!'
     for dir in directories:
+        old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
         if (dir == 'plugins'):
 
             if os.path.islink(dir):
@@ -70,9 +74,6 @@ if os.path.exists(save_path):
                     pattern = comp + "*"
                     print "Looking for: ", pattern
 
-                    #oldFiles = os.listdir(dir2)
-                    #newFiles = os.listdir(dir1)
-
                     for oldName in oldFiles:
                         #print comp
                         #print 'Filename: %-25s %s' % (name, fnmatch.fnmatch(name, pattern))
@@ -91,24 +92,31 @@ if os.path.exists(save_path):
 
                     #print "Comparison: ", compare
 
-                    #find the difference between the new plugins and old plugins
-                    different = set(new) - set(old)
+                #find the difference between the new plugins and old plugins
+                different = set(new) - set(old)
 
-                    if len(different) == 0:
-                        different = set(old) - set(new)
-                        print "Old plugins have more!!"
+                if len(different) == 0:
+                    different = set(old) - set(new)
+                    print "No new plugins to update!"
 
-                    for diff in different:
-                        print "New: ", diff
-                      #  shutil.copyfile(dir + "/" + diff, dir2 + "/" + diff #copy new plugins
-                      #  shutil.rmtree(dir) #remove new plugins directory
-                    #  os.system("ln -s " + new_folder + " " + dir) #symlink plugins directory to centralized location
+                for diff in different:
+                    diffPlugin = glob.glob(dir + "/" +diff + '*')
+                    print "New: ", diff
+                    print "Full: ", diffPlugin
+                    for name in diffPlugin:
+                        #print "shutil.copyfile(" + dir + "/" + name.replace("plugins/", "") + "," + dir2 + "/" + name.replace("plugins/", "") +")" #copy new plugins
+                        shutil.copyfile(dir + "/" + name.replace("plugins/", ""), dir2 + "/" + name.replace("plugins/", "")) #copy new plugins
+
+                shutil.rmtree(dir) #remove new plugins directory
+                os.system("ln -s " + new_folder.replace("conf", "plugins") + " " + old_loc)
+                print "os.system(ln -s " + new_folder.replace("conf", "plugins") + " " + dir2 +")" #symlink plugins directory to centralized location
+                #os.system("ln -s " + dir2 + " " + dir) #symlink plugins directory to centralized location
 
         else:
             print "Updating the " + dir + " directory!"
             #ignore the repository and work folders they only need to be checked and moved on the first install
             if os.path.islink(dir):
-                print "There is no upgrade available for " + dir + "!"
+                print "There is no upgrade available for the " + dir + " directory!"
             else:
                 new_folder = str(save_path) + "/" + str(dir)
                 old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
@@ -118,7 +126,7 @@ if os.path.exists(save_path):
 
                 #symlink the shared folders to the new locations
                 os.system("ln -s " + new_folder + " " + old_loc)
-                #print "ln -s " + new_folder + " ", old_loc
+                print "ln -s " + new_folder + " ", old_loc
                 print "Symlinking ", new_folder + " to " + old_loc
 
 else:
@@ -128,9 +136,6 @@ else:
 
     #compile location for new repository
     for dir in directories:
-
-        new_folder = str(save_path) + "/" + str(dir)
-        old_loc = os.path.dirname(os.path.realpath(__file__)) + "/" + dir #XLD/XLR Core Directory can be hardcoded here
 
         print old_loc
         print "New Folder: ", new_folder
